@@ -1,6 +1,7 @@
 package httpbin
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"time"
@@ -21,6 +22,25 @@ type headersResponse struct {
 	Headers http.Header `json:"headers"`
 }
 
+type headersResponseCompat struct {
+	Headers map[string]interface{} `json:"headers"`
+}
+
+func (hr headersResponse) MarshalJSON() ([]byte, error) {
+	hrCompat := headersResponseCompat{
+		Headers: make(map[string]interface{}),
+	}
+
+	for k, headers := range hr.Headers {
+		if len(headers) != 1 {
+			hrCompat.Headers[k] = headers
+		} else {
+			hrCompat.Headers[k] = headers[0]
+		}
+	}
+	return json.Marshal(hrCompat)
+}
+
 type ipResponse struct {
 	Origin string `json:"origin"`
 }
@@ -36,6 +56,38 @@ type getResponse struct {
 	URL     string      `json:"url"`
 }
 
+type getResponseCompat struct {
+	Args    map[string]interface{} `json:"args"`
+	Headers map[string]interface{} `json:"headers"`
+	Origin  string                 `json:"origin"`
+	URL     string                 `json:"url"`
+}
+
+func (gr getResponse) MarshalJSON() ([]byte, error) {
+	grCompat := getResponseCompat{
+		Args:    make(map[string]interface{}),
+		Headers: make(map[string]interface{}),
+		Origin:  gr.Origin,
+		URL:     gr.URL,
+	}
+
+	for k, args := range gr.Args {
+		if len(args) != 1 {
+			grCompat.Args[k] = args
+		} else {
+			grCompat.Args[k] = args[0]
+		}
+	}
+	for k, headers := range gr.Headers {
+		if len(headers) != 1 {
+			grCompat.Headers[k] = headers
+		} else {
+			grCompat.Headers[k] = headers[0]
+		}
+	}
+	return json.Marshal(grCompat)
+}
+
 // A generic response for any incoming request that might contain a body
 type bodyResponse struct {
 	Args    url.Values  `json:"args"`
@@ -47,6 +99,61 @@ type bodyResponse struct {
 	Files map[string][]string `json:"files"`
 	Form  map[string][]string `json:"form"`
 	JSON  interface{}         `json:"json"`
+}
+
+type bodyResponseCompat struct {
+	Args    map[string]interface{} `json:"args"`
+	Headers map[string]interface{} `json:"headers"`
+	Origin  string                 `json:"origin"`
+	URL     string                 `json:"url"`
+
+	Data  string                 `json:"data"`
+	Files map[string]interface{} `json:"files"`
+	Form  map[string]interface{} `json:"form"`
+	JSON  interface{}            `json:"json"`
+}
+
+func (br bodyResponse) MarshalJSON() ([]byte, error) {
+	brCompat := bodyResponseCompat{
+		Args:    make(map[string]interface{}),
+		Headers: make(map[string]interface{}),
+		Origin:  br.Origin,
+		URL:     br.URL,
+		Data:    br.Data,
+		Files:   make(map[string]interface{}),
+		Form:    make(map[string]interface{}),
+		JSON:    br.JSON,
+	}
+
+	for k, args := range br.Args {
+		if len(args) != 1 {
+			brCompat.Args[k] = args
+		} else {
+			brCompat.Args[k] = args[0]
+		}
+	}
+	for k, headers := range br.Headers {
+		if len(headers) != 1 {
+			brCompat.Headers[k] = headers
+		} else {
+			brCompat.Headers[k] = headers[0]
+		}
+	}
+	for k, files := range br.Files {
+		if len(files) != 1 {
+			brCompat.Files[k] = files
+		} else {
+			brCompat.Files[k] = files[0]
+		}
+	}
+	for k, forms := range br.Form {
+		if len(forms) != 1 {
+			brCompat.Form[k] = forms
+		} else {
+			brCompat.Form[k] = forms[0]
+		}
+	}
+	return json.Marshal(brCompat)
 }
 
 type cookiesResponse map[string]string
@@ -62,10 +169,56 @@ type gzipResponse struct {
 	Gzipped bool        `json:"gzipped"`
 }
 
+type gzipResponseCompat struct {
+	Headers map[string]interface{} `json:"headers"`
+	Origin  string                 `json:"origin"`
+	Gzipped bool                   `json:"gzipped"`
+}
+
+func (gr gzipResponse) MarshalJSON() ([]byte, error) {
+	grCompat := gzipResponseCompat{
+		Headers: make(map[string]interface{}),
+		Origin:  gr.Origin,
+		Gzipped: gr.Gzipped,
+	}
+
+	for k, headers := range gr.Headers {
+		if len(headers) != 1 {
+			grCompat.Headers[k] = headers
+		} else {
+			grCompat.Headers[k] = headers[0]
+		}
+	}
+	return json.Marshal(grCompat)
+}
+
 type deflateResponse struct {
 	Headers  http.Header `json:"headers"`
 	Origin   string      `json:"origin"`
 	Deflated bool        `json:"deflated"`
+}
+
+type deflateResponseCompat struct {
+	Headers  map[string]interface{} `json:"headers"`
+	Origin   string                 `json:"origin"`
+	Deflated bool                   `json:"deflated"`
+}
+
+func (dr deflateResponse) MarshalJSON() ([]byte, error) {
+	drCompat := deflateResponseCompat{
+		Headers:  make(map[string]interface{}),
+		Origin:   dr.Origin,
+		Deflated: dr.Deflated,
+	}
+
+	for k, headers := range dr.Headers {
+		if len(headers) != 1 {
+			drCompat.Headers[k] = headers
+		} else {
+			drCompat.Headers[k] = headers[0]
+		}
+	}
+	return json.Marshal(drCompat)
 }
 
 // An actual stream response body will be made up of one or more of these
@@ -76,6 +229,40 @@ type streamResponse struct {
 	Headers http.Header `json:"headers"`
 	Origin  string      `json:"origin"`
 	URL     string      `json:"url"`
+}
+
+type streamResponseCompat struct {
+	ID      int                    `json:"id"`
+	Args    map[string]interface{} `json:"args"`
+	Headers map[string]interface{} `json:"headers"`
+	Origin  string                 `json:"origin"`
+	URL     string                 `json:"url"`
+}
+
+func (sr streamResponse) MarshalJSON() ([]byte, error) {
+	srCompat := streamResponseCompat{
+		ID:      sr.ID,
+		Args:    make(map[string]interface{}),
+		Headers: make(map[string]interface{}),
+		Origin:  sr.Origin,
+		URL:     sr.URL,
+	}
+
+	for k, args := range sr.Args {
+		if len(args) != 1 {
+			srCompat.Args[k] = args
+		} else {
+			srCompat.Args[k] = args[0]
+		}
+	}
+	for k, headers := range sr.Headers {
+		if len(headers) != 1 {
+			srCompat.Headers[k] = headers
+		} else {
+			srCompat.Headers[k] = headers[0]
+		}
+	}
+	return json.Marshal(srCompat)
 }
 
 type uuidResponse struct {
